@@ -1,31 +1,27 @@
-pipeline {
-	agent any
-	environment{
-    	IMAGE_NAME = 'alexeysavchuk/app'
-		DOCKERHUB_CREDS = credentials('DockerHub')
-  	}
-  	stages {
-    	stage('configure project') {
-      		steps {
-        		sh 'cd app && npm install'
-      		}
-    	}
-		stage('build image') {
-	     	steps {
-		      	sh 'docker build -t $IMAGE_NAME .'
-		      	sh 'echo $DOCKERHUB_CREDS_PSW | docker login -u $DOCKERHUB_CREDS_USR --password-stdin'
-		      	sh 'docker push $IMAGE_NAME'
-	      	}
-	      	post {
-		      	always {
-		        	sh 'docker logout'
-		      	}
-	      	}
-	    }
-	    stage('deploy application') {
-    		steps {
-      			sh 'kubectl apply -f kube/app.yaml'
-      		}
-    	}
-  	}
+podTemplate (
+    containers: [
+        containerTemplate(
+                name: 'build-env',
+                image: 'alexeysavchuk/build-image',
+                command: 'sleep',
+                args: '30d'
+            )
+        ],
+        imagePullSecrets: [
+            'demo-project-registry'
+        ],
+        serviceAccount: 'myserviceaccount',
+        envVars: [
+            envVar(key: 'IMAGE_NAME', value: 'alexeysavchuk/app-image')
+        ]
+) {
+node(POD_LABEL) {
+        stage('Build a Maven project') {
+            git url: 'https://github.com/alexey-savchuk/demo-project.git', branch: 'main'
+            container('build-env') {
+                sh 'cd app && npm install'
+                sh 'deploy_from_yaml kube/app.yaml'
+            }
+        }
+    }
 }
