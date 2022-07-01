@@ -46,7 +46,7 @@ pipeline {
     }
   }
   triggers {
-    pollSCM('* * * * *')
+    pollSCM('H * * * *')
   }
   environment {
     IMAGE_NAME = 'alexeysavchuk/app'
