@@ -53,14 +53,14 @@ pipeline {
     DOCKERHUB_CREDS = credentials('DockerHub')
   }
   stages {
-    stage('Test') {
+    stage('Configure') {
       steps {
         container(name: 'node', shell: '/bin/bash') {
           sh 'cd app && npm install'
         }
       }
     }
-    stage('Build Docker Image') {
+    stage('Build Image') {
       steps {
         container('docker') {
           sh '''
@@ -72,10 +72,9 @@ pipeline {
         }
       }
     }
-    stage('Test 2') {
+    stage('Deploy') {
       steps {
         container(name: 'build-env', shell: '/bin/bash') {
-
           sh 'deploy_from_yaml kube/app.yaml'
         }
       }
