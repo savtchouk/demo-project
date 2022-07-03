@@ -28,16 +28,10 @@ app.get('/profile-picture', function (req, res) {
   res.end(img, 'binary');
 });
 
-// use when starting application locally 10.96.40.171:27017
 let mongoUrlLocal = `mongodb://${mongoUsr}:${mongoPwd}@${mongoAddress}:${mongoPort}`;
-  
-// use when starting application as docker container
-// let mongoUrlDocker = "mongodb://admin:password@mongodb";
 
-// pass these options to mongo client connect request to avoid DeprecationWarning for current Server Discovery and Monitoring engine
 let mongoClientOptions = { useNewUrlParser: true, useUnifiedTopology: true };
 
-// "user-account" in demo with docker. "my-db" in demo with docker-compose
 let databaseName = "my-db";
 
 app.post('/update-profile', function (req, res) {
@@ -58,7 +52,7 @@ app.post('/update-profile', function (req, res) {
     });
 
   });
-  // Send response
+
   res.send(userObj);
 });
 
@@ -77,7 +71,6 @@ app.get('/get-profile', function (req, res) {
       response = result;
       client.close();
 
-      // Send response
       res.send(response ? response : {});
     });
   });
