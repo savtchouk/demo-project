@@ -48,7 +48,7 @@
         const user = await response.json();
         console.log(JSON.stringify(user));
 
-        document.getElementById('name').textContent = user.name ? user.name : 'John Doe';
+        document.getElementById('name').textContent = user.name ? user.name : 'John Ivanov';
         document.getElementById('email').textContent = user.email ? user.email : 'john.doe@gmail.com';
         document.getElementById('interests').textContent = user.interests ? user.interests : 'coding';
 
