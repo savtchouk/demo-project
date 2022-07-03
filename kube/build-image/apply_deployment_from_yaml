@@ -68,7 +68,7 @@ def delete_deployment_from_yaml(api, deployment):
     namespace = metadata.get("namespace", "default")
 
     response = _send_request(
-        request=api.replace_namespaced_deployment,
+        request=api.delete_namespaced_deployment,
         name=name,
         namespace=namespace,
     )
@@ -77,10 +77,9 @@ def delete_deployment_from_yaml(api, deployment):
 
 def apply_deployment_from_yaml(api, deployment):
     if deployment_exists(api, deployment):
-        response = replace_deployment_from_yaml(api, deployment)
-    else:
-        response = create_deployment_from_yaml(api, deployment)
-    return response
+        delete_deployment_from_yaml(api, deployment)
+
+    return create_deployment_from_yaml(api, deployment)
 
 def main():
     load_config()
