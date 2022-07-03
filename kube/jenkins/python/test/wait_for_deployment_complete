@@ -1,0 +1,27 @@
+#!/bin/python
+
+from kubernetes import client, config, utils
+from sys import argv
+
+def wait_for_deployment_complete(deployment_name, timeout=60):
+    config.load_incluster_config()
+    k8s_client = client.ApiClient()
+
+    start = time.time()
+    while time.time() - start < timeout:
+        time.sleep(2)
+        response = k8s_client.read_namespaced_deployment_status(deployment_name, K8S_API_NAMESPACE)
+        s = response.status
+        if (s.updated_replicas == response.spec.replicas and
+                s.replicas == response.spec.replicas and
+                s.available_replicas == response.spec.replicas and
+                s.observed_generation >= response.metadata.generation):
+            return True
+        else:
+            print(f'[updated_replicas:{s.updated_replicas},replicas:{s.replicas}'
+                  ',available_replicas:{s.available_replicas},observed_generation:{s.observed_generation}] waiting...')
+
+    raise RuntimeError(f'Waiting timeout for deployment {deployment_name}')
+
+if __name__ == "__main__":
+    wait_for_deployment_complete()

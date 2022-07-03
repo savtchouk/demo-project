@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  creationTimestamp: null
+  labels:
+    app: test-depl
+  name: test-depl
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: test-depl
+  strategy: {}
+  template:
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: test-depl
+    spec:
+      containers:
+      - image: alexeysavchuk/simple-deployer
+        name: simple-deployer
+        resources: {}
+      imagePullSecrets:
+        - name: demo-project-registry
+status: {}

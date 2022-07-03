@@ -1,27 +1,81 @@
-podTemplate (
-    containers: [
-        containerTemplate(
-                name: 'build-env',
-                image: 'alexeysavchuk/build-image',
-                command: 'sleep',
-                args: '30d'
-            )
-        ],
-        imagePullSecrets: [
-            'demo-project-registry'
-        ],
-        serviceAccount: 'myserviceaccount',
-        envVars: [
-            envVar(key: 'IMAGE_NAME', value: 'alexeysavchuk/app-image')
-        ]
-) {
-node(POD_LABEL) {
-        stage('Build a Maven project') {
-            git url: 'https://github.com/alexey-savchuk/demo-project.git', branch: 'main'
-            container('build-env') {
-                sh 'cd app && npm install'
-                sh 'deploy_from_yaml kube/app.yaml'
-            }
-        }
+pipeline {
+  agent {
+    kubernetes {
+      yaml '''
+      apiVersion: v1
+      kind: Pod
+      metadata:
+      spec:
+        containers:
+        - name: node
+          image: node
+          command:
+          - sleep
+          args:
+          - 30d
+          tty: true
+        - name: docker
+          image: docker
+          command:
+          - sleep
+          args:
+          - 30d
+          tty: true
+          securityContext:
+            privileged: true
+          volumeMounts:
+          - mountPath: /var/run/docker.sock
+            name: docker-sock
+            readOnly: false
+        - name: build-env
+          image: alexeysavchuk/pipeline-python
+          command:
+          - sleep
+          args:
+          - 30d
+          tty: true
+        volumes:
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+        serviceAccount: myserviceaccount
+      '''
     }
+  }
+  triggers {
+    pollSCM('H * * * *')
+  }
+  environment {
+    IMAGE_NAME = 'alexeysavchuk/app'
+    DOCKERHUB_CREDS = credentials('DockerHub')
+  }
+  stages {
+    stage('Configure') {
+      steps {
+        container(name: 'node', shell: '/bin/bash') {
+          sh 'cd app && npm install'
+        }
+      }
+    }
+    stage('Build Image') {
+      steps {
+        container('docker') {
+          sh '''
+            docker build -t ${IMAGE_NAME} .
+            echo $DOCKERHUB_CREDS_PSW | docker login --username $DOCKERHUB_CREDS_USR --password-stdin
+            docker push ${IMAGE_NAME}
+            docker logout
+          '''
+        }
+      }
+    }
+    stage('Deploy') {
+      steps {
+        container(name: 'build-env', shell: '/bin/bash') {
+          sh 'apply_deployment_from_yaml kube/app.yaml'
+        }
+      }
+    }
+  }
 }
