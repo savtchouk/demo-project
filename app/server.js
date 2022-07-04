@@ -23,7 +23,7 @@ app.get('/', function (req, res) {
 });
 
 app.get('/profile-picture', function (req, res) {
-  let img = fs.readFileSync(path.join(__dirname, "images/profile.jpg"));
+  let img = fs.readFileSync(path.join(__dirname, "images/moon.jpg"));
   res.writeHead(200, {'Content-Type': 'image/jpg' });
   res.end(img, 'binary');
 });
