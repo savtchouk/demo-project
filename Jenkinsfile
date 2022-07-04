@@ -74,6 +74,7 @@ pipeline {
       steps {
         container(name: 'build-env', shell: '/bin/bash') {
           sh 'apply_deployment_from_yaml kube/app.yaml'
+          sh 'timeout 5m rollout_deployment_status kube/app.yaml'
         }
       }
     }

@@ -1,0 +1,78 @@
+#!/bin/python
+
+import yaml
+import time
+
+from kubernetes import client, config
+
+from kubernetes.client.exceptions import ApiException
+from kubernetes.config.config_exception import ConfigException
+
+from sys import argv
+
+def load_config():
+    try:
+        config.load_kube_config()
+    except ConfigException:
+        config.load_incluster_config()
+
+def _send_request(request, **kwargs):
+    try:
+        return request(**kwargs)
+    except ApiException as exc:
+        print("API Request failed:", exc)
+        exit(1)
+
+def deployment_exists(api, deployment):
+    metadata = deployment["metadata"]
+    name = metadata["name"]
+    namespace = metadata.get("namespace", "default")
+
+    response = _send_request(
+        request=api.list_namespaced_deployment,
+        namespace=namespace
+    )
+
+    for deployment in response.items:
+        if deployment.metadata.name == name:
+            return True
+
+    return False
+
+def delete_deployment_from_yaml(api, deployment):
+    metadata = deployment["metadata"]
+    name = metadata["name"]
+    namespace = metadata.get("namespace", "default")
+
+    response = _send_request(
+        request=api.delete_namespaced_deployment,
+        name=name,
+        namespace=namespace,
+    )
+    return response
+
+def main():
+    load_config()
+    api = client.AppsV1Api()
+
+    for arg in argv[1:]:
+        with open(arg) as yaml_file:
+            try:
+                deployment = yaml.safe_load(yaml_file)
+            except yaml.YAMLError as exc:
+                print(exc)
+                exit(1)
+
+            metadata = deployment["metadata"]
+            name = metadata["name"]
+            namespace = metadata.get("namespace", "default")
+
+            dep = api.read_namespaced_deployment(name, namespace)
+            while dep.status.updated_replicas != dep.spec.replicas:
+                print("Waiting")
+                time.sleep(5)
+
+            print("Success")
+
+if __name__ == '__main__':
+    main()
